@@ -5,7 +5,6 @@ extern crate positioned_io;
 extern crate reed_solomon;
 
 use crate::common::crc32_file;
-use crate::common::LoHi;
 
 use image::{ImageBuffer, RgbImage};
 
