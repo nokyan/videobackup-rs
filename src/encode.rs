@@ -23,6 +23,8 @@ use std::thread;
 
 static ENCODING_VERSION: u16 = 3;
 
+static BLOCK_SIZE: u16 = 128;
+
 fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16, count: u32, video_codec: &str) -> String {
     // check whether someone supplied to many bytes for our image
     if bytes.len() as f32 > ((width * height) as f32) / ((colors as f32).log(256.0)) {
@@ -66,7 +68,8 @@ fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16,
     // convert it to an MPEG-TS using ffmpeg for easy stitching later
     let ts_path = Path::new("tmp").join(format!("{}.ts", count)).absolutize().unwrap().to_str().unwrap().to_string();
     let cmd_result = Command::new("ffmpeg")
-                             .args(&["-y", "-r", &fps.to_string(), "-i", &img_path, "-t", &(1/fps).to_string(), "-c:v", video_codec, "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", &ts_path])
+                             .args(&["-y", "-r", &fps.to_string(), "-i", &img_path, "-t", &(1/fps).to_string(), "-c:v", video_codec,
+                              "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", &ts_path])
                              .output();
 
     return ts_path;
@@ -77,7 +80,7 @@ fn prepare_build_image(bytes: &[u8], fps: u16, width: usize, height: usize, colo
 }
 
 /// Encodes any file into a video.
-pub fn encode(filename: &str, fps: u16, width: u32, height: u32, colors: u16, ecc_bytes: u8, video_codec: &str, crf: u16, threads: usize) -> String {
+pub fn encode(file_name_input: &str, fps: u16, width: u32, height: u32, colors: u16, ecc_bytes: u8, video_codec: &str, crf: u16, threads: usize) -> String {
 
     // create temp folder for saving the BMP and TS files
     let res = std::fs::create_dir_all(Path::new("tmp"));
@@ -87,21 +90,21 @@ pub fn encode(filename: &str, fps: u16, width: u32, height: u32, colors: u16, ec
     }
 
     // open the file and gather information for the metadata frame
-    let file = fs::File::open(filename);
+    let file = fs::File::open(file_name_input);
     match file {
         Err(e) => panic!("Unable to open file {}!", e),
         Ok(v) => (),
     }
-    let file_metadata = fs::metadata(filename).unwrap();
+    let file_metadata = fs::metadata(file_name_input).unwrap();
 
     let file_size = file_metadata.len();
 
-    let file_name = Path::new(filename).file_name().unwrap();
+    let file_name = Path::new(file_name_input).file_name().unwrap().to_str().unwrap();
     if file_name.len() > 512 {
         panic!("The file name may not be longer than 512 characters!")
     }
 
-    let crc32 = crc32_file(filename);
+    let crc32 = crc32_file(file_name_input);
 
     // metadata looks like this:
     // - bytes 0-1 are the encoding version
@@ -115,9 +118,21 @@ pub fn encode(filename: &str, fps: u16, width: u32, height: u32, colors: u16, ec
 
     // make our metadata byte array for building the metadata frame
     let mut metadata_bytes: [u8; 561] = [0; 561];
+    let ecc_encoder = Encoder::new(32);
+
+    // start copying all the stuff over
+    metadata_bytes[0..=1].copy_from_slice(&ENCODING_VERSION.to_be_bytes());
+    metadata_bytes[2..=3].copy_from_slice(&colors.to_be_bytes());
+    metadata_bytes[4] = 1; // TODO: change this when this tool allows for more than 2 colors
+    metadata_bytes[5..=12].copy_from_slice(&file_size.to_be_bytes());
+    metadata_bytes[13..=16].copy_from_slice(&crc32.to_be_bytes());
+    metadata_bytes[17] = ecc_bytes;
+    metadata_bytes[18..=(18 + file_name.len() - 1)].copy_from_slice(file_name.as_bytes());
+    metadata_bytes[530..=561].copy_from_slice(ecc_encoder.encode(metadata_bytes[0..=529]).ecc())
     
     // TODO: build metadata frame, implement encoding of the actual file
+
     
 
-    return Path::new(filename).absolutize().unwrap().to_str().unwrap().to_string();
+    return Path::new(file_name_input).absolutize().unwrap().to_str().unwrap().to_string();
 }
