@@ -1,5 +1,4 @@
 extern crate crc32fast;
-extern crate positioned_io;
 
 use crc32fast::Hasher;
 
