@@ -94,7 +94,7 @@ fn main() {
     if let Some(ref matches) = matches.subcommand_matches("encode") {
         println!("videobackup-rs encoder {}", env!("CARGO_PKG_VERSION"));
         println!("{}", DISCLAIMER);
-        encode::encode("gomme", 6, 3840, 2160, 2, 16, "gommehd", 23, 12);
+        // TODO: implement encode
     }
 
     // TODO: handle decoding
