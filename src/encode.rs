@@ -18,6 +18,7 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::process::Command;
 use std::thread;
+use std::time::{Duration, Instant};
 
 
 static ENCODING_VERSION: u16 = 3;
@@ -91,6 +92,8 @@ fn prepare_build_image(bytes: Vec<Vec<u8>>, fps: u16, width: usize, height: usiz
 
 /// Encodes any file into a video.
 pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, colors: u16, ecc_bytes: u8, video_codec: String, crf: u16, threads: usize) -> String {
+
+    let start_time = Instant::now();
 
     // create temp folder for saving the BMP and TS files
     let res = std::fs::create_dir_all(Path::new("tmp"));
@@ -179,7 +182,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
         let mut threads_to_use = threads;
         let mut reached_eof = false;
         if n != buffer_size {
-            threads_to_use = (n / content_bytes_per_frame).clamp(1, threads);
+            threads_to_use = ((n / content_bytes_per_frame) + 1).clamp(1, threads);
             reached_eof = true;
         } else {
             
@@ -232,7 +235,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
         //std::fs::remove_file(Path::new("tmp").join("list.txt")).unwrap();
         std::fs::rename(Path::new("tmp").join("new_partial.ts"), Path::new("tmp").join("partial.ts")).unwrap();
 
-        println!("→ Finished frames to {}/{} ({:.1} %)", frame_count + 1, needed_frames, (((frame_count as f32 )* 100.0f32)/needed_frames as f32));
+        println!("→ Finished frames to {}/{} ({:.1} %)", frame_count + 1, needed_frames, ((((frame_count + 1) as f32 ) * 100.0f32)/needed_frames as f32));
 
         // some cleaning up
         read_bytes = zero_vec(buffer_size);
@@ -241,17 +244,18 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
         }
     }
 
-    println!("→ Finishing the final video...)");
+    println!("→ Finishing the final video...");
 
     let final_cmd_result = Command::new("ffmpeg")
                              .args(&["-y", "-r", &fps.to_string(), "-i", Path::new("tmp").join("partial.ts").to_str().unwrap(), "-c", "copy", output])
                              .output().unwrap();
 
-    println!("→ Cleaning up...)");
+    println!("→ Cleaning up...");
 
     std::fs::remove_dir_all(Path::new("tmp")).unwrap();
 
-    println!("→ Done!)");
+
+    println!("→ Done in {} seconds!", (start_time.elapsed().as_millis() as f32 / 1000.0f32));
 
     return Path::new(input).absolutize().unwrap().to_str().unwrap().to_string();
 }
