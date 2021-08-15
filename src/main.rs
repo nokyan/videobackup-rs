@@ -69,13 +69,14 @@ fn main() {
                             .multiple(false)
                             .default_value("16")
                             .takes_value(true))
-                    .arg(Arg::with_name("codec")
-                            .long("video-codec")
-                            .short("vc")
-                            .help("Tells ffmpeg which video encoder to use.")
-                            .multiple(false)
-                            .default_value("libx264")
-                            .takes_value(true))
+                    // TODO: Reimplement custom codec
+                    //.arg(Arg::with_name("codec")
+                    //        .long("video-codec")
+                    //        .short("vc")
+                    //        .help("Tells ffmpeg which video encoder to use.")
+                    //        .multiple(false)
+                    //        .default_value("libx264")
+                    //        .takes_value(true))
                     .arg(Arg::with_name("crf")
                             .long("crf")
                             .help("Quality of the video (constant rate factor). Lower values will increase quality (therefore less compression artifacts) and file size. Might not work with every video codec.")
@@ -94,8 +95,19 @@ fn main() {
     if let Some(ref matches) = matches.subcommand_matches("encode") {
         println!("videobackup-rs encoder {}", env!("CARGO_PKG_VERSION"));
         println!("{}", DISCLAIMER);
-        // TODO: implement encode
+        encode::encode(matches.value_of("INPUT").unwrap(),
+                       matches.value_of("OUTPUT").unwrap(),
+                       matches.value_of("fps").unwrap().parse::<u16>().unwrap(),
+                       matches.value_of("width").unwrap().parse::<usize>().unwrap(),
+                       matches.value_of("height").unwrap().parse::<usize>().unwrap(),
+                       matches.value_of("colors").unwrap().parse::<u16>().unwrap(),
+                       matches.value_of("bytes").unwrap().parse::<u8>().unwrap(),
+                       String::from("libx264"),
+                       matches.value_of("crf").unwrap().parse::<u16>().unwrap(),
+                       matches.value_of("threads").unwrap().parse::<usize>().unwrap());
+    } else if let Some(ref matches) = matches.subcommand_matches("decode") {
+        // TODO: handle decoding
+    } else {
+        println!("Invalid subcommand! Use this command with --help for explanation!")
     }
-
-    // TODO: handle decoding
 }
