@@ -5,6 +5,13 @@ use crc32fast::Hasher;
 use std::fs;
 use std::io::prelude::*;
 
+pub fn zero_vec(size: usize) -> Vec<u8> {
+    let mut vec: Vec<u8> = Vec::with_capacity(size);
+    for i in 0..size {
+        vec.push(0);
+    }
+    return vec;
+}
 
 pub fn crc32_file(filename: &str) -> u32 {
     let mut file = fs::File::open(filename).unwrap();
