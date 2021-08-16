@@ -59,7 +59,7 @@ fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16,
     }
 
     // we want to save the image in a tmp folder
-    let img_path = Path::new("tmp").join(format!("{}.bmp", count)).absolutize().unwrap().to_str().unwrap().to_string();
+    let img_path = Path::new("tmp").join(format!("{}.png", count)).absolutize().unwrap().to_str().unwrap().to_string();
     match image.save(&img_path) {
         Err(e) => println!("⚠ Error saving file #{}: {:?}", count, e),
         Ok(v) => (),
@@ -232,7 +232,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
                                  .args(&["-y", "-f", "concat", "-r", &fps.to_string(), "-i", Path::new("tmp").join("list.txt").to_str().unwrap(), "-c", "copy", Path::new("tmp").join("new_partial.ts").to_str().unwrap()])
                                  .output().unwrap();
 
-        //std::fs::remove_file(Path::new("tmp").join("list.txt")).unwrap();
+        std::fs::remove_file(Path::new("tmp").join("list.txt")).unwrap();
         std::fs::rename(Path::new("tmp").join("new_partial.ts"), Path::new("tmp").join("partial.ts")).unwrap();
 
         println!("→ Finished frames to {}/{} ({:.1} %)", frame_count + 1, needed_frames, ((((frame_count + 1) as f32 ) * 100.0f32)/needed_frames as f32));
