@@ -108,6 +108,10 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
         panic!("The input file name may not be longer than 200 characters!")
     }
 
+    if ecc_bytes > BLOCK_SIZE / 2 {
+        panic!("You can't have more than {} ECC bytes!", BLOCK_SIZE / 2);
+    }
+
     let crc32 = crc32_file(input);
 
     // calculate some geometry
