@@ -3,8 +3,9 @@ extern crate num_cpus;
 
 use clap::{Arg, App, SubCommand};
 
-mod encode;
 mod common;
+mod decode;
+mod encode;
 
 
 static DISCLAIMER: &str = "IMPORTANT: THIS TOOL COMES WITH NO WARRANTY WHATSOEVER. USE AT YOUR OWN RISK.";
@@ -90,11 +91,28 @@ fn main() {
                             .multiple(false)
                             .default_value(&cpus)
                             .takes_value(true)))
+            .subcommand(App::new("decode")
+                    .version(env!("CARGO_PKG_VERSION"))
+                    .author("ManicRobot")
+                    .about("Decodes a video file into the original file")
+                    .arg(Arg::with_name("INPUT")
+                            .help("The file to be turned into a video")
+                            .index(1)
+                            .takes_value(true)
+                            .multiple(false)
+                            .required(true))
+                    .arg(Arg::with_name("threads")
+                            .long("threads")
+                            .short("t")
+                            .help("How many threads to use")
+                            .multiple(false)
+                            .default_value(&cpus)
+                            .takes_value(true)))
             .get_matches();
     
     if let Some(ref matches) = matches.subcommand_matches("encode") {
-        println!("videobackup-rs encoder {}", env!("CARGO_PKG_VERSION"));
-        println!("{}", DISCLAIMER);
+        println!("→ videobackup-rs encoder {}", env!("CARGO_PKG_VERSION"));
+        println!("ℹ {}", DISCLAIMER);
         encode::encode(matches.value_of("INPUT").unwrap(),
                        matches.value_of("OUTPUT").unwrap(),
                        matches.value_of("fps").unwrap().parse::<u16>().unwrap(),
@@ -106,8 +124,10 @@ fn main() {
                        matches.value_of("crf").unwrap().parse::<u16>().unwrap(),
                        matches.value_of("threads").unwrap().parse::<usize>().unwrap());
     } else if let Some(ref matches) = matches.subcommand_matches("decode") {
-        // TODO: handle decoding
+        println!("→ videobackup-rs decoder {}", env!("CARGO_PKG_VERSION"));
+        println!("ℹ {}", DISCLAIMER);
+        decode::decode(matches.value_of("INPUT").unwrap(), true, matches.value_of("threads").unwrap().parse::<usize>().unwrap())
     } else {
-        println!("Invalid subcommand! Use this command with --help for explanation!")
+        println!("⚠ Invalid subcommand! Use this command with --help for explanation!")
     }
 }
