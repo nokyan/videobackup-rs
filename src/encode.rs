@@ -161,7 +161,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
     metadata_bytes[218..=249].copy_from_slice(bytes);
     
     // TODO: build metadata frame, implement encoding of the actual file
-    build_frame(&metadata_bytes, fps, width, height, colors, 0, video_codec);
+    build_frame(&metadata_bytes, fps, width, height, 2, 0, video_codec);
 
     // rename our metadata frame video so we can start building the data frames
     match std::fs::rename(Path::new("tmp").join("0.ts"), Path::new("tmp").join("partial.ts")) {
