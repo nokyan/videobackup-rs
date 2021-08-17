@@ -93,12 +93,8 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
 
     let start_time = Instant::now();
 
-    // create temp folder for saving the BMP and TS files
-    let res = std::fs::create_dir_all(Path::new("tmp"));
-    match res {
-        Err(e) => panic!("Unable to create temp folder! {}", e),
-        Ok(v) => (),
-    }
+    // create temp folder for saving the PNG and TS files
+    std::fs::create_dir_all(Path::new("tmp")).unwrap();
 
     // open the file and gather information for the metadata frame
     let mut file = fs::File::open(input).unwrap();
