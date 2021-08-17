@@ -26,7 +26,7 @@ use std::time::{Duration, Instant};
 fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16, count: u32, video_codec: String) -> std::path::PathBuf {
     // check whether someone supplied to many bytes for our image
     if bytes.len() as f32 > ((width * height) as f32) / (colors as f32).log(256.0) {
-        panic!("⚠ Byte array is too large for the image size!")
+        panic!("Byte array is too large for the image size!")
     }
 
     // declare our color_palettes
@@ -52,14 +52,14 @@ fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16,
                 image.put_pixel(pixel_x, pixel_y, pixel);
             }
         } else {
-            panic!("⚠ Sorry, color palette sizes other than 2 are currently not implemented!")
+            panic!("Sorry, color palette sizes other than 2 are currently not implemented!")
         }
     }
 
     // we want to save the image in a tmp folder
     let img_path = Path::new("tmp").join(format!("{}.png", count)).absolutize().unwrap().to_str().unwrap().to_string();
     match image.save(&img_path) {
-        Err(e) => println!("⚠ Error saving file #{}: {:?}", count, e),
+        Err(e) => println!("Error saving file #{}: {:?}", count, e),
         Ok(v) => (),
     }
 
@@ -96,7 +96,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
     // create temp folder for saving the BMP and TS files
     let res = std::fs::create_dir_all(Path::new("tmp"));
     match res {
-        Err(e) => panic!("⚠ Unable to create temp folder! {}", e),
+        Err(e) => panic!("Unable to create temp folder! {}", e),
         Ok(v) => (),
     }
 
@@ -109,7 +109,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
 
     let file_name = Path::new(input).file_name().unwrap().to_str().unwrap();
     if file_name.len() > 200 {
-        panic!("⚠ The input file name may not be longer than 200 characters!")
+        panic!("The input file name may not be longer than 200 characters!")
     }
 
     let crc32 = crc32_file(input);
@@ -164,7 +164,7 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
     // rename our metadata frame video so we can start building the data frames
     match std::fs::rename(Path::new("tmp").join("0.ts"), Path::new("tmp").join("partial.ts")) {
         Ok(v) => (),
-        Err(e) => panic!("⚠ Unable to rename the metadata frame to partial.ts! {}", e)
+        Err(e) => panic!("Unable to rename the metadata frame to partial.ts! {}", e)
     }
 
     println!("→ Finished metadata frame; 1/{} ({:.1} %)", needed_frames, (100.0f32/needed_frames as f32));
