@@ -20,7 +20,7 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::process::Command;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 
 fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16, count: u32, video_codec: String) -> std::path::PathBuf {
