@@ -3,6 +3,8 @@ extern crate image;
 extern crate path_absolutize;
 extern crate reed_solomon;
 
+use crate::common::BLOCK_SIZE;
+use crate::common::ENCODING_VERSION;
 use crate::common::crc32_file;
 use crate::common::zero_vec;
 
@@ -20,10 +22,6 @@ use std::process::Command;
 use std::thread;
 use std::time::{Duration, Instant};
 
-
-static ENCODING_VERSION: u16 = 3;
-
-static BLOCK_SIZE: u16 = 128;
 
 fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16, count: u32, video_codec: String) -> std::path::PathBuf {
     // check whether someone supplied to many bytes for our image

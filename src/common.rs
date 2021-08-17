@@ -5,6 +5,11 @@ use crc32fast::Hasher;
 use std::fs;
 use std::io::prelude::*;
 
+
+pub static ENCODING_VERSION: u16 = 3;
+
+pub static BLOCK_SIZE: u8 = 128;
+
 pub fn zero_vec(size: usize) -> Vec<u8> {
     let mut vec: Vec<u8> = Vec::with_capacity(size);
     for i in 0..size {
