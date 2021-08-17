@@ -65,10 +65,10 @@ fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16,
 
     // convert it to an MPEG-TS using ffmpeg for easy stitching later
     let ts_path = Path::new("tmp").join(format!("{}.ts", count));
-    let cmd_result = Command::new("ffmpeg")
-                             .args(&["-y", "-r", &fps.to_string(), "-i", &img_path, "-t", &(1.0f32/(fps as f32)).to_string(), "-c:v", &video_codec,
-                              "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", ts_path.to_str().unwrap()])
-                             .output().unwrap();
+    Command::new("ffmpeg")
+            .args(&["-y", "-r", &fps.to_string(), "-i", &img_path, "-t", &(1.0f32/(fps as f32)).to_string(), "-c:v", &video_codec,
+            "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", ts_path.to_str().unwrap()])
+            .output().unwrap();
 
     return ts_path;
 }
@@ -195,36 +195,36 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
 
         // prepare some vectors and start multithreading
         let mut thread_handles = Vec::with_capacity(threads);
-        let mut finished_frames: Vec<std::path::PathBuf> = Vec::new();
-        let mut current_frame_count = 0;
+        let mut finished_frames: Vec<(u32, std::path::PathBuf)> = Vec::new(); // we use a tuple of the current_frame_count and the path because human sorting is awful und breaks everything when threads >= 10
+        let mut current_frame_count: u32 = 0;
         for p in prepared_frames {
             let handle = thread::spawn(move || {
                 return prepare_build_image(p, fps, width, height, colors, ecc_bytes, current_frame_count, String::from("libx264"));
             });
-            thread_handles.push(handle);
+            thread_handles.push((current_frame_count, handle));
             current_frame_count += 1;
             frame_count += 1;
         }
         for t in thread_handles {
-            finished_frames.push(t.join().unwrap());
+            finished_frames.push((t.0, t.1.join().unwrap()));
         }
 
         // prepare the list for ffmpeg to concatenate the generated frames
-        finished_frames.sort();
-        finished_frames.insert(0, Path::new("tmp").join("partial.ts"));
+        finished_frames.sort_by(|a, b| a.0.cmp(&b.0));
+        finished_frames.insert(0, (0, Path::new("tmp").join("partial.ts")));
         let mut list = String::new();
         for f in finished_frames.iter() {
             list.push_str("file ");
-            list.push_str(&str::replace(f.to_str().unwrap(), "tmp/", ""));
+            list.push_str(&str::replace(f.1.to_str().unwrap(), "tmp/", ""));
             list.push_str("\n");
         }
         let mut list_txt = fs::File::create(Path::new("tmp").join("list.txt")).unwrap();
         list_txt.write(list.as_bytes()).unwrap();
 
         // do the ffmpeg concatenation of all ts files and then rename everything to how we started
-        let con_result = Command::new("ffmpeg")
-                                 .args(&["-y", "-f", "concat", "-r", &fps.to_string(), "-i", Path::new("tmp").join("list.txt").to_str().unwrap(), "-c", "copy", Path::new("tmp").join("new_partial.ts").to_str().unwrap()])
-                                 .output().unwrap();
+        Command::new("ffmpeg")
+                .args(&["-y", "-f", "concat", "-r", &fps.to_string(), "-i", Path::new("tmp").join("list.txt").to_str().unwrap(), "-c", "copy", Path::new("tmp").join("new_partial.ts").to_str().unwrap()])
+                .output().unwrap();
 
         std::fs::remove_file(Path::new("tmp").join("list.txt")).unwrap();
         std::fs::rename(Path::new("tmp").join("new_partial.ts"), Path::new("tmp").join("partial.ts")).unwrap();
@@ -239,17 +239,14 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
     }
 
     println!("→ Finishing the final video...");
-
     let final_cmd_result = Command::new("ffmpeg")
                              .args(&["-y", "-r", &fps.to_string(), "-i", Path::new("tmp").join("partial.ts").to_str().unwrap(), "-c", "copy", output])
                              .output().unwrap();
 
     println!("→ Cleaning up...");
-
     std::fs::remove_dir_all(Path::new("tmp")).unwrap();
 
-
-    println!("→ Done in {} seconds!", (start_time.elapsed().as_millis() as f32 / 1000.0f32));
+    println!("✓ Done in {} seconds!", (start_time.elapsed().as_millis() as f32 / 1000.0f32));
 
     return Path::new(input).absolutize().unwrap().to_str().unwrap().to_string();
 }
