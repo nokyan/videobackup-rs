@@ -239,9 +239,9 @@ pub fn encode(input: &str, output: &str, fps: u16, width: usize, height: usize, 
     }
 
     println!("→ Finishing the final video...");
-    let final_cmd_result = Command::new("ffmpeg")
-                             .args(&["-y", "-r", &fps.to_string(), "-i", Path::new("tmp").join("partial.ts").to_str().unwrap(), "-c", "copy", output])
-                             .output().unwrap();
+    Command::new("ffmpeg")
+            .args(&["-y", "-r", &fps.to_string(), "-i", Path::new("tmp").join("partial.ts").to_str().unwrap(), "-c", "copy", output])
+            .output().unwrap();
 
     println!("→ Cleaning up...");
     std::fs::remove_dir_all(Path::new("tmp")).unwrap();
