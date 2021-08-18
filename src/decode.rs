@@ -83,13 +83,25 @@ fn read_raw_frame(input: &str, colors: u16) -> (Vec<u8>, u128, u128, u32, u32) {
             let read_pixel = try_read_pixel(read_color, &two_color_palette);
             // OR the read bit (since we're in 2 color mode) with the currently read byte
             current_byte = current_byte | ((read_pixel.0 as u8) << (7 - (i % 8)));
-            // we've written all 8 bits for our byte, push it to the buffer and start reading
-            // a new one next time
             if i % 8 == 7 {
+                // we've written all 8 bits for our byte, push it to the buffer and start reading
+                // a new one next time
                 buf.push(current_byte);
-                if i < 260 {
-                    //println!("pixel: {}", current_byte);
-                }
+                current_byte = 0;
+            }
+            if read_pixel.1 {
+                correct_pixels += 1;
+            } else {
+                estimated_pixels += 1;
+            }
+        } else if colors == 4 {
+            let read_pixel = try_read_pixel(read_color, &four_color_palette);
+            // OR the read 2 bits (since we're in 4 color mode) with the currently read byte
+            current_byte = current_byte | ((read_pixel.0 as u8) << (6 - ((i % 4) * 2)));
+            if i % 4 == 3 {
+                // we've written all 8 bits for our byte, push it to the buffer and start reading
+                // a new one next time
+                buf.push(current_byte);
                 current_byte = 0;
             }
             if read_pixel.1 {

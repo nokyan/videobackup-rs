@@ -46,13 +46,24 @@ fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16,
                 let pixel_x: u32 = ((i * 8 + j) % width).try_into().unwrap();
                 let pixel_y: u32 = ((i * 8 + j) / width).try_into().unwrap();
                 // get the j'th bit in the current byte
-                let bit: usize = ((bytes[i] & ((128 / (u8::pow(2, j.try_into().unwrap()))) as u8)) >> (7-j)).into();
+                let bit: u8 = ((bytes[i] & ((128 / (u8::pow(2, j.try_into().unwrap()))) as u8)) >> (7-j)).into();
                 // paint the "calculated" color to the image
-                let pixel = two_color_palette[bit];
+                let pixel = two_color_palette[bit as usize];
                 image.put_pixel(pixel_x, pixel_y, pixel);
             }
         } else {
-            panic!("Sorry, color palette sizes other than 2 are currently not implemented!")
+            for j in 0..4 {
+                // TODO: Optimize all those type conversions away
+                // get the current pixel's position
+                let pixel_x: u32 = ((i * 4 + j) % width).try_into().unwrap();
+                let pixel_y: u32 = ((i * 4 + j) / width).try_into().unwrap();
+                // get the j'th bit pair in the current byte
+                let and_mask: u8 = 0b11000000 >> j*2;
+                let bit_pair: u8 = (bytes[i] & and_mask) >> (3-j)*2;
+                // paint the "calculated" color to the image
+                let pixel = four_color_palette[bit_pair as usize];
+                image.put_pixel(pixel_x, pixel_y, pixel);
+            }
         }
     }
 
@@ -75,7 +86,6 @@ fn build_frame(bytes: &[u8], fps: u16, width: usize, height: usize, colors: u16,
 
 /// This function takes a vector of byte arrays (the data part of the blocks), appends the ECC and then calls build_frame
 fn prepare_build_image(bytes: Vec<Vec<u8>>, fps: u16, width: usize, height: usize, colors: u16, ecc_bytes: u8, count: u32, video_codec: String) -> std::path::PathBuf {
-    // cbpf = content_bytes_per_frame, cbpb = content_bytes_per_block
     // the names were just too long
     let ecc_encoder = Encoder::new(ecc_bytes as usize);
     // initialize a vector with allocated space of blocks_per_frame * block_size, so basically the amount of bytes to be processed
